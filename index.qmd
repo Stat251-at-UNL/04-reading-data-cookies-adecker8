@@ -2,7 +2,7 @@
 title: "Chocolate Chip Cookies"
 execute:
   error: true
-author: "Your Name"
+author: Aubrey Decker
 output: html_document
 ---
 
@@ -12,10 +12,15 @@ First, read in the CSV data of cookie ingredients.
 Make sure that your end-result data has appropriate types for each column - these should match the types provided in the documentation in the README.md file.
 
 ```{r}
-
+cookie <- read.csv("choc_chip_cookie_ingredients.csv")
+cookie
+head(cookie %>% arrange(Recipe_Index))
 ```
 
 ```{python}
+import pandas as pd
+cookies = pd.read_csv('choc_chip_cookie_ingredients.csv')
+print(df.head())
 
 ```
 
@@ -34,11 +39,11 @@ Exploratory data analysis is the process of getting familiar with your dataset. 
 
 Generate at least 5 questions you might explore using this database of cookie ingredients.
 
-1.
-2. 
-3. 
-4. 
-5. 
+1. On average, what amount of flour is used for a recipe?
+2. what is the most common unit of measurement?
+3. Which ingredients are the least common?
+4. The average rating of all purpose flour?
+5. How many ingredients have a quantity over 10.0?
 
 
 ### Skimming the Data
@@ -53,14 +58,19 @@ Install both packages, and read the package documentation ([R](https://cran.r-pr
 
 
 ```{r}
-
+install.packages("skimr")
+skimr::skim(cookie)
 ```
 
 ```{python}
+import skimpy
 
+skimpy.skim(cookies)
 ```
 
 [Part 2] Write 1-2 sentences about what you can tell from each summary display you generate. Did you discover anything new about the data?
+
+Something I learned from the skimr summary display was the max and min of each variable. I could also see a general histogram for the variables 'X', 'Rating', and 'Quantity'.
 
 ### Generating Tables
 
@@ -68,9 +78,50 @@ Another useful technique for exploratory data analysis is to generate summary ta
 You may want to use the `dplyr` package in R (`group_by` or `count` functions), as well as the `groupby` and `count` methods in Pandas. [Python example](https://sparkbyexamples.com/pandas/pandas-groupby-count-examples/), [R example](https://dplyr.tidyverse.org/reference/count.html)
 
 [Part 1] Using R and Python, generate a table that shows what **proportion** of recipes contain each type of ingredient, for the most common 20 ingredients.
+```{R}
+library(dplyr)
+
+ingredient_counts <- cookie %>%
+  count(Ingredient, name = "recipe_count") %>%
+  arrange(desc(recipe_count)) %>%
+  top_n(20, recipe_count) %>%
+  mutate(proportion = recipe_count / nrow(cookie))
+
+ingredient_counts
+```
+
+```{python}
+import pandas as pd
+
+ingredient_counts = cookie.groupby("Ingredient")["Ingredient"].count().reset_index(name="recipe_count")
+
+ingredient_counts = ingredient_counts.sort_values(by="recipe_count", ascending=False).head(20)
+
+ingredient_counts["proportion"] = ingredient_counts["recipe_count"] / len(cookie)
+
+print(ingredient_counts)
+```
 
 [Part 2] Print out a character string that lists all of the ingredients that do not appear in at least 20 recipes.
+```{r}
+rare_ingredients <- cookie %>%
+  count(Ingredient, name = "recipe_count") %>% 
+  filter(recipe_count < 20) %>%
+  pull(Ingredient)
 
+rare_string <- paste(rare_ingredients, collapse = ", ")
+
+rare_string
+```
+
+```{python}
+rare_ingredients = ingredient_counts[ingredient_counts["recipe_count"] < 20]["ingredient"].tolist()
+
+rare_string = ", ".join(rare_ingredients)
+
+print(rare_string)
+
+```
 
 (Delete this note, but you can include data values inline in markdown text by using backticks, at least in R. For instance, here is R's built in value for pi: `r pi`. Unfortunately, this doesn't work in python using the knitr markdown engine, but you can print the list out in python anyways using a code chunk.)
 
@@ -79,5 +130,13 @@ You may want to use the `dplyr` package in R (`group_by` or `count` functions), 
 Using whatever plotting system you are comfortable with in R or python, see if you can create a couple of useful exploratory data visualizations which address one of the questions you wrote above - or another question which you've come up with as you've worked on this assignment.
 
 [Part 1] Create at least one plot (it doesn't have to be pretty) that showcases an interesting facet of the data.
+```{r}
+library(ggplot2)
+ggplot(cookie, aes(x = Quantity, y = Ingredient)) + 
+  geom_point() +
+  labs(title = "Ingredient vs Quantity", x = "Quantity", y= "Ingredient")
+```
 
 [Part 2] Write 2-3 sentences about what you can learn from that plot and what directions you might want to investigate from here.
+
+This plot shows which ingredients and their quantity. This can be helpful to answer my previous question about how many ingredients have a quantity over 10. This can be useful to know which ingredients a baker might need a surplus of. To investigate further, look into which recipes have these ingredients that have high quantities.
